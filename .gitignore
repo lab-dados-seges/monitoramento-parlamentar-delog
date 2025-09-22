@@ -1,0 +1,20 @@
+# Jupyter
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+__pycache__/
+*.pyc
+*.pyo
+*~
+*.swp
+*.swo
+
+# Dados locais
+data/*
+!data/df_final.csv
+
+# Tests locais
+testes/
+
+# SO
+.DS_Store
+Thumbs.db

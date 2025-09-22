@@ -1,0 +1,63 @@
+name: Atualizar PLs (diário)
+
+on:
+  schedule:
+    # 06:00 America/Sao_Paulo ≈ 09:00 UTC; seg-sex
+    - cron: "0 9 * * 1-5"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-pls
+  cancel-in-progress: false
+
+jobs:
+  run-notebook:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Instalar deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas requests papermill jupyter
+
+      - name: Executar notebook e gerar CSV
+        run: |
+          papermill tratar_dados.ipynb tratar_dados_out.ipynb
+          test -f data/df_final.csv || (echo "CSV ausente"; exit 1)
+
+      - name: Verificar se houve mudança no CSV
+        id: diff
+        run: |
+          if git ls-files --error-unmatch data/df_final.csv >/dev/null 2>&1; then
+            # arquivo já versionado anteriormente: use diff
+            if git diff --quiet -- data/df_final.csv; then
+              echo "changed=false" >> $GITHUB_OUTPUT
+            else
+              echo "changed=true" >> $GITHUB_OUTPUT
+            fi
+          else
+            # primeiro commit do arquivo
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit & push somente se mudou
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/df_final.csv
+          git commit -m "Auto-update df_final.csv [skip ci]"
+          git push
+
+      - name: Sem mudanças
+        if: steps.diff.outputs.changed != 'true'
+        run: echo "Sem alterações no CSV. Nada a publicar."
