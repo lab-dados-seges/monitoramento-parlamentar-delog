@@ -7,7 +7,7 @@ import pandas as pd
 st.set_page_config(page_title="Monitoramento de PLs", layout="wide")
 st.title("Monitoramento de Projetos de Lei - DELOG")
 
-RAW_URL = "https://raw.githubusercontent.com/<org_ou_user>/<repo>/main/data/df_final.csv"
+RAW_URL = "https://raw.githubusercontent.com/lab-dados-seges/monitoramento-parlamentar-delog/main/data/df_final.csv"
 
 @st.cache_data(ttl=60*15)  # 15 min
 def load_data(url: str) -> pd.DataFrame:
